@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Variables CSS AZALIS Premium */
+:root {
+  --azalis-green: #6B7D6D;
+  --azalis-beige: #F4EFE7;
+  --azalis-white: #FAF9F7;
+  --azalis-black: #1C1C1C;
+}
+
+/* Reset et styles de base */
+@layer base {
+  * {
+    @apply border-azalis-green/10;
+  }
+  
+  body {
+    @apply font-sans bg-azalis-beige text-azalis-black;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-azalis-green;
+  }
+}
+
+/* Composants réutilisables */
+@layer components {
+  /* Bouton primaire */
+  .btn-primary {
+    @apply px-8 py-4 bg-azalis-green text-azalis-white font-medium rounded-sm hover:bg-azalis-green/90 transition-colors duration-200;
+  }
+
+  /* Bouton secondaire */
+  .btn-secondary {
+    @apply px-8 py-4 border-2 border-azalis-green text-azalis-green font-medium rounded-sm hover:bg-azalis-green hover:text-azalis-white transition-colors duration-200;
+  }
+
+  /* Lien élégant */
+  .link-elegant {
+    @apply text-azalis-green hover:text-azalis-green/80 transition-colors duration-200 underline-offset-4 hover:underline;
+  }
+}
+
+/* Utilitaires personnalisés */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Espacements généreux */
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  /* Conteneur avec espacement */
+  .content-spacing {
+    @apply space-y-6 md:space-y-8;
+  }
+}
