@@ -49,6 +49,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   return (
     <button
       onClick={handleAddToCart}
+      data-add-to-cart="true"
       className={`w-full md:w-auto px-8 py-4 font-medium rounded-sm transition-all duration-200 ${
         isAdded
           ? 'bg-green-600 text-white'

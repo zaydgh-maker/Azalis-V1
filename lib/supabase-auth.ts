@@ -2,11 +2,15 @@
  * Helpers Supabase pour l'authentification admin
  * 
  * Fournit des fonctions pour gérer l'authentification et vérifier les rôles admin
+ * 
+ * Vérification admin : utilise supabaseAdmin (serviceRoleKey) pour lire admin_users
+ * car la table admin_users a des politiques RLS - seul le client service role peut
+ * lire sans restriction pour vérifier si un user.id existe.
  */
 
 import { createServerClient as createSSRClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { supabase as supabaseClient } from './supabase';
+import { supabaseAdmin } from './supabase';
 
 /**
  * Créer un client Supabase pour Server Components avec gestion des cookies
@@ -54,12 +58,13 @@ export async function getServerUser() {
 
 /**
  * Vérifier si l'utilisateur est admin (Server Component)
+ * Utilise supabaseAdmin (serviceRoleKey) pour bypass RLS sur admin_users
  */
 export async function isAdmin(): Promise<boolean> {
   const user = await getServerUser();
   if (!user) return false;
 
-  const { data: adminUser } = await supabaseClient
+  const { data: adminUser } = await supabaseAdmin
     .from('admin_users')
     .select('role')
     .eq('id', user.id)
@@ -70,12 +75,13 @@ export async function isAdmin(): Promise<boolean> {
 
 /**
  * Récupérer le rôle de l'utilisateur (Server Component)
+ * Utilise supabaseAdmin (serviceRoleKey) pour bypass RLS sur admin_users
  */
 export async function getUserRole(): Promise<'admin' | 'super_admin' | null> {
   const user = await getServerUser();
   if (!user) return null;
 
-  const { data: adminUser } = await supabaseClient
+  const { data: adminUser } = await supabaseAdmin
     .from('admin_users')
     .select('role')
     .eq('id', user.id)

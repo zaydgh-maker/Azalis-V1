@@ -4,12 +4,12 @@
  * Page de Login Admin AZALIS
  * 
  * Authentification par email + mot de passe via Supabase Auth
+ * Utilise supabaseBrowser (cookies) pour que le middleware détecte la session
  */
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import Container from '@/components/Container';
+import { supabase, supabaseBrowser } from '@/lib/supabase';
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -19,37 +19,38 @@ function AdminLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Client auth : supabaseBrowser persiste en cookies pour le middleware
+  const authClient = supabaseBrowser ?? supabase;
+
   // Vérifier si l'utilisateur est déjà connecté
   useEffect(() => {
     const checkUser = async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await authClient.auth.getUser();
 
       if (user) {
-        // Vérifier si l'utilisateur est admin
-        const { data: adminUser } = await supabase
+        const { data: adminUser } = await authClient
           .from('admin_users')
           .select('role')
           .eq('id', user.id)
           .single();
 
         if (adminUser) {
-          // Rediriger vers le dashboard
-          const redirect = searchParams.get('redirect') || '/admin/dashboard';
-          router.push(redirect);
+          router.push(searchParams.get('redirect') || '/admin/dashboard');
+          router.refresh();
         }
       }
     };
 
     checkUser();
-  }, [router, searchParams]);
+  }, [router, searchParams, authClient]);
 
   // Afficher les erreurs de l'URL
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'unauthorized') {
-      setError('Vous n\'avez pas les droits d\'accès administrateur');
+      setError('Vous n\'avez pas le droit d\'accès administrateur');
     }
   }, [searchParams]);
 
@@ -59,8 +60,8 @@ function AdminLoginForm() {
     setIsLoading(true);
 
     try {
-      // Connexion avec Supabase Auth
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      // Connexion avec supabaseBrowser (persiste session en cookies pour middleware)
+      const { data, error: signInError } = await authClient.auth.signInWithPassword({
         email,
         password,
       });
@@ -73,26 +74,25 @@ function AdminLoginForm() {
         throw new Error('Erreur de connexion');
       }
 
-      // Vérifier si l'utilisateur est admin
-      const { data: adminUser, error: adminError } = await supabase
+      // Vérifier si l'utilisateur est admin (RLS permet la lecture si user connecté)
+      const { data: adminUser, error: adminError } = await authClient
         .from('admin_users')
         .select('role')
         .eq('id', data.user.id)
         .single();
 
       if (adminError || !adminUser) {
-        // Déconnecter l'utilisateur s'il n'est pas admin
-        await supabase.auth.signOut();
-        throw new Error('Vous n\'avez pas les droits d\'accès administrateur');
+        await authClient.auth.signOut();
+        console.error('Admin check failed:', adminError?.message ?? 'User not in admin_users');
+        throw new Error('Vous n\'avez pas le droit d\'accès administrateur');
       }
 
-      // Rediriger vers le dashboard
-      const redirect = searchParams.get('redirect') || '/admin/dashboard';
-      router.push(redirect);
-      router.refresh();
+      // Redirection full page pour garantir que les cookies sont envoyés au middleware
+      window.location.href = '/admin/dashboard';
     } catch (err) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Erreur de connexion');
+      const errorMessage = err instanceof Error ? err.message : (err as { message?: string })?.message ?? 'Erreur de connexion';
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -149,13 +149,6 @@ function AdminLoginForm() {
               />
             </div>
 
-            {/* Message d'erreur */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-sm text-sm">
-                {error}
-              </div>
-            )}
-
             {/* Bouton de connexion */}
             <button
               type="submit"
@@ -186,6 +179,13 @@ function AdminLoginForm() {
                 'Se connecter'
               )}
             </button>
+
+            {/* Erreur exacte sous le bouton */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-sm text-sm">
+                {error}
+              </div>
+            )}
           </form>
 
           {/* Lien retour */}

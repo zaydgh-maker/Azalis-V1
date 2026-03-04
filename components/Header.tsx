@@ -20,13 +20,14 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[#F4EFE7]/95 backdrop-blur-sm border-b border-[rgba(79,103,88,0.08)]">
+    <header className="sticky top-0 z-50 bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-azalis-green/8">
       <Container>
         <nav className="flex items-center justify-between py-6">
           {/* Logo */}
           <Link 
             href="/" 
-            className="text-2xl md:text-3xl font-bold text-[#2E2E2E] hover:text-[#2E2E2E]/80 transition-colors tracking-wide"
+            className="font-serif text-2xl md:text-3xl font-light text-[#2E2E2E] hover:text-[#2E2E2E]/80 transition-colors tracking-widest-plus"
+            style={{ letterSpacing: '0.25em' }}
           >
             AZALIS
           </Link>
@@ -37,7 +38,7 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-sm font-medium text-[#2E2E2E]/70 hover:text-[#4F6758] transition-colors"
+                className="text-sm font-medium text-[#2E2E2E]/70 hover:text-azalis-green transition-colors"
               >
                 {item.name}
               </Link>
@@ -46,7 +47,7 @@ export default function Header() {
             {/* Bouton Panier Desktop */}
             <button
               onClick={toggleCart}
-              className="relative p-2 text-[#4F6758] hover:bg-azalis-beige rounded-full transition-colors"
+              className="relative p-2 text-azalis-green hover:bg-azalis-beige rounded-full transition-colors"
               aria-label="Ouvrir le panier"
             >
               <svg
@@ -64,7 +65,7 @@ export default function Header() {
               </svg>
               {/* Badge compteur */}
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#4F6758] text-azalis-white text-xs font-semibold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-azalis-green text-azalis-white text-xs font-semibold rounded-full flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
@@ -76,7 +77,7 @@ export default function Header() {
             {/* Bouton Panier Mobile */}
             <button
               onClick={toggleCart}
-              className="relative p-2 text-[#4F6758]"
+              className="relative p-2 text-azalis-green"
               aria-label="Ouvrir le panier"
             >
               <svg
@@ -93,7 +94,7 @@ export default function Header() {
                 />
               </svg>
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#4F6758] text-azalis-white text-xs font-semibold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-azalis-green text-azalis-white text-xs font-semibold rounded-full flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
@@ -102,7 +103,7 @@ export default function Header() {
             {/* Bouton Menu Mobile */}
             <button
               type="button"
-              className="p-2 text-[#4F6758]"
+              className="p-2 text-azalis-green"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -134,13 +135,13 @@ export default function Header() {
 
         {/* Menu Mobile */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-[rgba(79,103,88,0.08)]">
+          <div className="md:hidden py-4 border-t border-azalis-green/8">
             <div className="flex flex-col gap-4">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-sm font-medium text-[#2E2E2E]/70 hover:text-[#4F6758] transition-colors"
+                  className="text-sm font-medium text-[#2E2E2E]/70 hover:text-azalis-green transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}

@@ -15,7 +15,6 @@ function ConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('orderId');
-  const [countdown, setCountdown] = useState(10);
 
   // Rediriger si pas d'orderId
   useEffect(() => {
@@ -23,18 +22,6 @@ function ConfirmationContent() {
       router.push('/');
     }
   }, [orderId, router]);
-
-  // Compte à rebours pour redirection automatique
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      router.push('/');
-    }
-  }, [countdown, router]);
 
   if (!orderId) {
     return null;
@@ -117,10 +104,6 @@ function ConfirmationContent() {
             </Link>
           </div>
 
-          {/* Compte à rebours */}
-          <p className="text-sm text-azalis-black/50 mt-8">
-            Redirection automatique dans {countdown} seconde{countdown > 1 ? 's' : ''}...
-          </p>
         </div>
       </Container>
     </section>

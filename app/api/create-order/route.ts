@@ -196,6 +196,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Alerte WhatsApp via CallMeBot
+    const sendWhatsAppAlert = async (order: { id: string; name: string; phone: string; city: string; total: number }) => {
+      const message = encodeURIComponent(
+        `🛍️ Nouvelle commande Azalis!\nClient: ${order.name}\nTél: ${order.phone}\nVille: ${order.city}\nTotal: ${order.total} DH\nID: ${order.id.slice(0, 8)}`
+      );
+      const numbers = [
+        { phone: 'NUMERO1', apikey: 'APIKEY1' },
+        { phone: 'NUMERO2', apikey: 'APIKEY2' },
+      ];
+      await Promise.all(
+        numbers.map(n =>
+          fetch(`https://api.callmebot.com/whatsapp.php?phone=${n.phone}&text=${message}&apikey=${n.apikey}`)
+        )
+      );
+    };
+    try {
+      await sendWhatsAppAlert({
+        id: order.id,
+        name: order.customer_name,
+        phone: order.phone,
+        city: order.city,
+        total: order.total,
+      });
+    } catch (err) {
+      console.error('WhatsApp alert failed:', err);
+    }
+
+    const sendNtfyAlert = async (order: { name: string; phone: string; city: string; total: number }) => {
+      const res = await fetch('https://ntfy.sh/azalis-commandes', {
+        method: 'POST',
+        headers: {
+          'Title': 'Nouvelle commande Azalis',
+          'Priority': 'high',
+          'Tags': 'shopping',
+          'Content-Type': 'text/plain',
+        },
+        body: `Client: ${order.name}\nTél: ${order.phone}\nVille: ${order.city}\nTotal: ${order.total} DH`,
+      });
+      console.log('Ntfy status:', res.status, await res.text());
+    };
+
+    try {
+      console.log('Ntfy payload sent');
+      await sendNtfyAlert({
+        name: order.customer_name,
+        phone: order.phone,
+        city: order.city,
+        total: order.total,
+      });
+    } catch (e) {
+      console.error('Ntfy error:', JSON.stringify(e));
+    }
+
     // 7. Créer les order_items (si la table existe)
     // Note: Cette étape est optionnelle pour la V1
     // Si vous avez une table order_items, décommentez ce code :

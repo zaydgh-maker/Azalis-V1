@@ -35,8 +35,9 @@ export default function CheckoutPage() {
   const [formData, setFormData] = useState({
     customer_name: '',
     phone: '',
-    city: '',
     address: '',
+    city: '',
+    postal_code: '',
     payment_method: 'cash_on_delivery' as 'cash_on_delivery' | 'card',
   });
 
@@ -56,17 +57,20 @@ export default function CheckoutPage() {
     if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
       return 'Numéro de téléphone invalide (ex: 0612345678 ou +212612345678)';
     }
+    if (!formData.address.trim()) {
+      return 'L\'adresse complète est requise';
+    }
+    if (formData.address.trim().length < 10) {
+      return 'L\'adresse doit être plus détaillée (minimum 10 caractères)';
+    }
     if (!formData.city.trim()) {
       return 'La ville est requise';
     }
     if (formData.city.trim().length < 3) {
       return 'La ville doit contenir au moins 3 caractères';
     }
-    if (!formData.address.trim()) {
-      return 'L\'adresse est requise';
-    }
-    if (formData.address.trim().length < 10) {
-      return 'L\'adresse doit être plus détaillée (minimum 10 caractères)';
+    if (!formData.postal_code.trim()) {
+      return 'Le code postal est requis';
     }
     return null;
   };
@@ -96,8 +100,9 @@ export default function CheckoutPage() {
       const orderData = {
         customer_name: formData.customer_name.trim(),
         phone: formData.phone.replace(/\s/g, ''),
-        city: formData.city.trim(),
         address: formData.address.trim(),
+        city: formData.city.trim(),
+        postal_code: formData.postal_code.trim(),
         payment_method: formData.payment_method,
         items: items.map(item => ({
           id: item.id,
@@ -167,6 +172,10 @@ export default function CheckoutPage() {
     return null;
   }
 
+  // Calcul frais de livraison
+  const shippingCost = total >= 300 ? 0 : 30;
+  const totalWithShipping = total + shippingCost;
+
   return (
     <>
       {/* Breadcrumb */}
@@ -191,7 +200,7 @@ export default function CheckoutPage() {
       {/* Contenu principal */}
       <section className="py-12 md:py-20">
         <Container size="lg">
-          <h1 className="text-4xl md:text-5xl font-serif font-semibold text-azalis-green mb-12 text-center">
+          <h1 className="text-2xl font-medium text-azalis-green mb-12 text-center">
             Finaliser votre commande
           </h1>
 
@@ -242,25 +251,7 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                {/* Ville */}
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-azalis-black mb-2">
-                    Ville <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    required
-                    disabled={isSubmitting}
-                    className="w-full px-4 py-3 bg-azalis-white border border-azalis-green/20 rounded-sm focus:outline-none focus:ring-2 focus:ring-azalis-green/50 disabled:opacity-50"
-                    placeholder="Ex: Casablanca"
-                  />
-                </div>
-
-                {/* Adresse */}
+                {/* Adresse complète */}
                 <div>
                   <label htmlFor="address" className="block text-sm font-medium text-azalis-black mb-2">
                     Adresse complète <span className="text-red-500">*</span>
@@ -281,88 +272,40 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                {/* Mode de paiement */}
+                {/* Ville */}
                 <div>
-                  <label className="block text-sm font-medium text-azalis-black mb-3">
-                    Mode de paiement
+                  <label htmlFor="city" className="block text-sm font-medium text-azalis-black mb-2">
+                    Ville <span className="text-red-500">*</span>
                   </label>
-                  <div className="space-y-3">
-                    {/* Paiement à la livraison */}
-                    <div
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                        formData.payment_method === 'cash_on_delivery'
-                          ? 'bg-azalis-beige border-azalis-green/30'
-                          : 'bg-azalis-white border-azalis-green/10 hover:border-azalis-green/20'
-                      }`}
-                      onClick={() => !isSubmitting && setFormData(prev => ({ ...prev, payment_method: 'cash_on_delivery' }))}
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="radio"
-                          id="cash_on_delivery"
-                          name="payment_method"
-                          value="cash_on_delivery"
-                          checked={formData.payment_method === 'cash_on_delivery'}
-                          onChange={handleChange}
-                          disabled={isSubmitting}
-                          className="mt-1"
-                        />
-                        <label htmlFor="cash_on_delivery" className="flex-1 cursor-pointer">
-                          <div className="font-medium text-azalis-green">
-                            Paiement à la livraison
-                          </div>
-                          <p className="text-sm text-azalis-black/70 mt-1">
-                            Payez en espèces lors de la réception de votre commande
-                          </p>
-                        </label>
-                      </div>
-                    </div>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 bg-azalis-white border border-azalis-green/20 rounded-sm focus:outline-none focus:ring-2 focus:ring-azalis-green/50 disabled:opacity-50"
+                    placeholder="Ex: Casablanca"
+                  />
+                </div>
 
-                    {/* Paiement par carte */}
-                    <div
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                        formData.payment_method === 'card'
-                          ? 'bg-azalis-beige border-azalis-green/30'
-                          : 'bg-azalis-white border-azalis-green/10 hover:border-azalis-green/20'
-                      }`}
-                      onClick={() => !isSubmitting && setFormData(prev => ({ ...prev, payment_method: 'card' }))}
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="radio"
-                          id="card"
-                          name="payment_method"
-                          value="card"
-                          checked={formData.payment_method === 'card'}
-                          onChange={handleChange}
-                          disabled={isSubmitting}
-                          className="mt-1"
-                        />
-                        <label htmlFor="card" className="flex-1 cursor-pointer">
-                          <div className="font-medium text-azalis-green flex items-center gap-2">
-                            Paiement par carte bancaire
-                            <span className="text-xs bg-azalis-green text-azalis-white px-2 py-0.5 rounded">
-                              Sécurisé
-                            </span>
-                          </div>
-                          <p className="text-sm text-azalis-black/70 mt-1">
-                            Payez en ligne de manière sécurisée via Stripe
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <svg className="w-8 h-5" viewBox="0 0 32 20" fill="none">
-                              <rect width="32" height="20" rx="2" fill="#1A1F71"/>
-                              <path d="M13.3 10c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-4-1.8-4-4z" fill="#EB001B"/>
-                              <path d="M17.3 6c-1.3 0-2.5.6-3.3 1.6.8.9 1.3 2.1 1.3 3.4s-.5 2.5-1.3 3.4c.8 1 2 1.6 3.3 1.6 2.2 0 4-1.8 4-4s-1.8-4-4-4z" fill="#F79E1B"/>
-                            </svg>
-                            <svg className="w-10 h-6" viewBox="0 0 40 24" fill="none">
-                              <rect width="40" height="24" rx="2" fill="#0066CC"/>
-                              <path d="M20 8l-3 8h2l3-8h-2zm-5 0l-2.5 5.5L12 11l-.5-3h-2l1 6 2 2 3.5-8h-2zm10 0l-1 8h2l1-8h-2zm3 0l-2 8h2l.5-2h2.5l.5 2h2l-2.5-8h-3zm.5 2l.5 3h-1.5l1-3z" fill="white"/>
-                            </svg>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+                {/* Code postal */}
+                <div>
+                  <label htmlFor="postal_code" className="block text-sm font-medium text-azalis-black mb-2">
+                    Code postal <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="postal_code"
+                    name="postal_code"
+                    value={formData.postal_code}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 bg-azalis-white border border-azalis-green/20 rounded-sm focus:outline-none focus:ring-2 focus:ring-azalis-green/50 disabled:opacity-50"
+                    placeholder="Ex: 20000"
+                  />
                 </div>
 
                 {/* Message d'erreur */}
@@ -372,36 +315,53 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* Bouton de soumission */}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full px-8 py-4 bg-azalis-green text-azalis-white font-medium rounded-sm hover:bg-azalis-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Traitement en cours...
+                {/* Bouton de soumission - Mobile/Tablette uniquement */}
+                <div className="lg:hidden">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full px-8 py-4 bg-azalis-green text-azalis-white font-medium rounded-sm hover:bg-azalis-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Traitement en cours...
+                      </span>
+                    ) : (
+                      'Confirmer la commande'
+                    )}
+                  </button>
+
+                  {/* Badges réassurance */}
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-azalis-black/60 font-light pt-2">
+                    <span className="flex items-center gap-1.5">
+                      🔒 Paiement sécurisé
                     </span>
-                  ) : (
-                    'Confirmer la commande'
-                  )}
-                </button>
+                    <span className="hidden sm:inline text-azalis-black/30">·</span>
+                    <span className="flex items-center gap-1.5">
+                      Livraison 24-48h
+                    </span>
+                    <span className="hidden sm:inline text-azalis-black/30">·</span>
+                    <span className="flex items-center gap-1.5">
+                      Satisfait ou remboursé
+                    </span>
+                  </div>
+                </div>
               </form>
             </div>
 
@@ -468,14 +428,101 @@ export default function CheckoutPage() {
                 {/* Séparateur */}
                 <div className="border-t border-azalis-green/10" />
 
+                {/* Sous-total */}
+                <div className="flex items-center justify-between">
+                  <span className="text-azalis-black/70">Sous-total</span>
+                  <span className="font-medium text-azalis-green">
+                    {formatPrice(total)}
+                  </span>
+                </div>
+
+                {/* Livraison */}
+                <div className="flex items-center justify-between">
+                  <span className="text-azalis-black/70">Livraison</span>
+                  <span className="font-medium text-azalis-green">
+                    {shippingCost === 0 ? (
+                      <span className="text-green-600">Gratuite</span>
+                    ) : (
+                      formatPrice(shippingCost)
+                    )}
+                  </span>
+                </div>
+
+                {shippingCost > 0 && (
+                  <div className="text-xs text-azalis-black/60 -mt-2">
+                    Gratuite dès 300 DH d&apos;achat
+                  </div>
+                )}
+
+                {/* Séparateur */}
+                <div className="border-t border-azalis-green/10" />
+
                 {/* Total */}
                 <div className="flex items-center justify-between text-xl">
                   <span className="font-serif font-semibold text-azalis-green">
                     Total
                   </span>
                   <span className="text-2xl font-semibold text-azalis-green">
-                    {formatPrice(total)}
+                    {formatPrice(totalWithShipping)}
                   </span>
+                </div>
+
+                {/* Mode de paiement dans le récapitulatif */}
+                <div className="border-t border-azalis-green/10 pt-4">
+                  <h3 className="text-sm font-medium text-azalis-black mb-3">
+                    Mode de paiement
+                  </h3>
+                  <div className="space-y-3">
+                    {/* COD */}
+                    <div
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                        formData.payment_method === 'cash_on_delivery'
+                          ? 'bg-azalis-beige border-azalis-green'
+                          : 'bg-azalis-white border-azalis-green/10 hover:border-azalis-green/20'
+                      }`}
+                      onClick={() => !isSubmitting && setFormData(prev => ({ ...prev, payment_method: 'cash_on_delivery' }))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          id="cod_summary"
+                          name="payment_method_summary"
+                          value="cash_on_delivery"
+                          checked={formData.payment_method === 'cash_on_delivery'}
+                          onChange={() => setFormData(prev => ({ ...prev, payment_method: 'cash_on_delivery' }))}
+                          disabled={isSubmitting}
+                          className="flex-shrink-0"
+                        />
+                        <label htmlFor="cod_summary" className="flex-1 cursor-pointer text-sm">
+                          <span className="font-medium text-azalis-green">Paiement à la livraison (COD)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Carte */}
+                    <div
+                      className={`p-3 rounded-lg border-2 cursor-not-allowed opacity-60 ${
+                        formData.payment_method === 'card'
+                          ? 'bg-azalis-beige border-azalis-green'
+                          : 'bg-azalis-white border-azalis-green/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          id="card_summary"
+                          name="payment_method_summary"
+                          value="card"
+                          checked={formData.payment_method === 'card'}
+                          disabled
+                          className="flex-shrink-0"
+                        />
+                        <label htmlFor="card_summary" className="flex-1 text-sm">
+                          <span className="font-medium text-azalis-black/60">Carte bancaire (bientôt disponible)</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Note */}
@@ -483,6 +530,55 @@ export default function CheckoutPage() {
                   <p className="text-sm text-azalis-black/70">
                     💡 Vous serez contacté pour confirmer votre commande avant la livraison.
                   </p>
+                </div>
+
+                {/* Bouton de confirmation - Desktop uniquement */}
+                <div className="hidden lg:block">
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="w-full px-8 py-4 bg-azalis-green text-azalis-white font-medium rounded-sm hover:bg-azalis-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Traitement en cours...
+                      </span>
+                    ) : (
+                      'Confirmer la commande'
+                    )}
+                  </button>
+
+                  {/* Badges réassurance */}
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-azalis-black/60 font-light pt-2">
+                    <span className="flex items-center gap-1.5">
+                      🔒 Paiement sécurisé
+                    </span>
+                    <span className="hidden sm:inline text-azalis-black/30">·</span>
+                    <span className="flex items-center gap-1.5">
+                      Livraison 24-48h
+                    </span>
+                    <span className="hidden sm:inline text-azalis-black/30">·</span>
+                    <span className="flex items-center gap-1.5">
+                      Satisfait ou remboursé
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -2,6 +2,8 @@ import Container from '@/components/Container';
 import ProductCard from '@/components/ProductCard';
 import { getAllProducts } from '@/lib/products';
 
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Notre Gamme - Dermo-cosmétique naturelle | AZALIS',
   description: 'Découvrez notre gamme de soins dermo-cosmétiques naturels haute tolérance, formulés avec rigueur en laboratoire agréé.',
@@ -19,7 +21,7 @@ export default async function ProductsPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="py-24 md:py-32 bg-azalis-white">
+      <section className="py-16 bg-azalis-white">
         <Container size="lg">
           <div className="text-center space-y-8 max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-serif font-semibold text-azalis-green leading-tight">
@@ -33,7 +35,7 @@ export default async function ProductsPage() {
       </section>
 
       {/* Catalogue Produits */}
-      <section className="py-24 md:py-32 bg-azalis-beige">
+      <section className="py-16 bg-azalis-beige">
         <Container size="lg">
           {/* Erreur */}
           {error && (
@@ -75,7 +77,7 @@ export default async function ProductsPage() {
       </section>
 
       {/* Section Confiance */}
-      <section className="py-20 md:py-24 bg-azalis-white border-t border-azalis-green/10">
+      <section className="py-16 bg-azalis-white border-t border-azalis-green/10">
         <Container size="lg">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 max-w-6xl mx-auto">
             <div className="text-center space-y-4">
