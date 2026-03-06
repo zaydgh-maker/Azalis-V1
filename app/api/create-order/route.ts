@@ -270,16 +270,17 @@ export async function POST(request: NextRequest) {
       console.error('Ntfy error:', JSON.stringify(e));
     }
 
-    // 7. Créer les order_items (si la table existe)
-    // Note: Cette étape est optionnelle pour la V1
-    // Si vous avez une table order_items, décommentez ce code :
-    /*
-    const orderItemsData = orderItems.map(item => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      price: item.price,
-    }));
+    // 7. Créer les order_items
+    const orderItemsData = orderItems.map(item => {
+      const product = products.find(p => p.id === item.product_id);
+      return {
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: product?.name || '',
+        quantity: item.quantity,
+        price: item.price,
+      };
+    });
 
     const { error: itemsError } = await supabase
       .from('order_items')
@@ -287,9 +288,7 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError);
-      // Note: La commande est déjà créée, on continue quand même
     }
-    */
 
     // 8. Mettre à jour le stock des produits
     for (const item of orderItems) {

@@ -13,6 +13,13 @@ import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/lib/products';
 import { formatDate } from '@/lib/utils';
 
+interface OrderItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+}
+
 interface Order {
   id: string;
   customer_name: string;
@@ -27,6 +34,7 @@ interface Order {
   stripe_payment_intent_id: string | null;
   created_at: string;
   updated_at: string;
+  order_items?: OrderItem[];
 }
 
 interface OrderDetailClientProps {
@@ -39,6 +47,8 @@ export default function OrderDetailClient({ order: initialOrder }: OrderDetailCl
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdating(true);
@@ -65,6 +75,25 @@ export default function OrderDetailClient({ order: initialOrder }: OrderDetailCl
       setError('Erreur lors de la mise à jour du statut');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erreur lors de la suppression');
+      }
+      router.push('/admin/orders');
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression');
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -199,6 +228,47 @@ export default function OrderDetailClient({ order: initialOrder }: OrderDetailCl
             </dl>
           </div>
 
+          {/* Produits commandés */}
+          {order.order_items && order.order_items.length > 0 && (
+            <div className="bg-azalis-white rounded-lg border border-azalis-green/10 p-6">
+              <h2 className="text-xl font-serif font-semibold text-azalis-green mb-4">
+                Produits commandés
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-azalis-green/10">
+                      <th className="text-left py-2 pr-4 font-medium text-azalis-black/60">Produit</th>
+                      <th className="text-center py-2 px-4 font-medium text-azalis-black/60">Qté</th>
+                      <th className="text-right py-2 px-4 font-medium text-azalis-black/60">Prix unitaire</th>
+                      <th className="text-right py-2 pl-4 font-medium text-azalis-black/60">Sous-total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.order_items.map((item) => (
+                      <tr key={item.id} className="border-b border-azalis-green/5 last:border-0">
+                        <td className="py-3 pr-4 text-azalis-black">{item.product_name}</td>
+                        <td className="py-3 px-4 text-center text-azalis-black">{item.quantity}</td>
+                        <td className="py-3 px-4 text-right text-azalis-black">{formatPrice(item.price)}</td>
+                        <td className="py-3 pl-4 text-right font-medium text-azalis-green">
+                          {formatPrice(item.price * item.quantity)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-azalis-green/10">
+                      <td colSpan={3} className="py-3 pr-4 text-right font-medium text-azalis-black/60">Total</td>
+                      <td className="py-3 pl-4 text-right font-semibold text-azalis-green text-base">
+                        {formatPrice(order.total)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Paiement */}
           <div className="bg-azalis-white rounded-lg border border-azalis-green/10 p-6">
             <h2 className="text-xl font-serif font-semibold text-azalis-green mb-4">
@@ -284,8 +354,51 @@ export default function OrderDetailClient({ order: initialOrder }: OrderDetailCl
               </div>
             </dl>
           </div>
+
+          {/* Supprimer */}
+          <div className="bg-azalis-white rounded-lg border border-red-200 p-6">
+            <h2 className="text-xl font-serif font-semibold text-red-600 mb-4">
+              Zone dangereuse
+            </h2>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="w-full px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Supprimer la commande
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Modal de confirmation suppression */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-azalis-white rounded-lg border border-azalis-green/10 p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-serif font-semibold text-red-600 mb-3">
+              Supprimer la commande
+            </h3>
+            <p className="text-sm text-azalis-black/70 mb-6">
+              Êtes-vous sûr de vouloir supprimer cette commande&nbsp;? Cette action est irréversible.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-azalis-black/70 bg-azalis-beige rounded-lg hover:bg-azalis-green/10 transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

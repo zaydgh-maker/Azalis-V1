@@ -6,7 +6,7 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { getServerUser } from '@/lib/supabase-auth';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import AdminNav from '@/components/admin/AdminNav';
 import OrderDetailClient from '@/components/admin/OrderDetailClient';
 
@@ -25,7 +25,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   }
 
   // Vérifier si l'utilisateur est admin
-  const { data: adminUser } = await supabase
+  const { data: adminUser } = await supabaseAdmin
     .from('admin_users')
     .select('role')
     .eq('id', user.id)
@@ -35,10 +35,18 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     redirect('/admin/login?error=unauthorized');
   }
 
-  // Récupérer la commande
-  const { data: order, error } = await supabase
+  // Récupérer la commande avec ses order_items
+  const { data: order, error } = await supabaseAdmin
     .from('orders')
-    .select('*')
+    .select(`
+      *,
+      order_items (
+        id,
+        product_name,
+        quantity,
+        price
+      )
+    `)
     .eq('id', params.id)
     .single();
 

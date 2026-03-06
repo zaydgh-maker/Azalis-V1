@@ -8,6 +8,21 @@ import AddToCartButton from '@/components/AddToCartButton';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/lib/supabase';
 import { formatPrice, getStockStatus } from '@/lib/products';
+import { createClient } from '@supabase/supabase-js';
+
+const supabasePublic = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+interface Review {
+  id: string;
+  name: string;
+  city: string | null;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
 
 interface ProductPageClientProps {
   product: Product;
@@ -20,6 +35,68 @@ export default function ProductPageClient({ product, otherProducts }: ProductPag
   const [showStickyButton, setShowStickyButton] = useState(false);
   const originalButtonRef = useRef<HTMLDivElement>(null);
   const stockStatus = getStockStatus(product);
+
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewForm, setReviewForm] = useState({ name: '', city: '', rating: 0, comment: '' });
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      const { data } = await supabasePublic
+        .from('reviews')
+        .select('id, name, city, rating, comment, created_at')
+        .eq('product_id', product.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+      if (data) setReviews(data);
+    };
+    fetchReviews();
+  }, [product.id]);
+
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReviewError('');
+    if (!reviewForm.name.trim() || !reviewForm.comment.trim()) {
+      setReviewError('Le prénom et le commentaire sont obligatoires.');
+      return;
+    }
+    if (reviewForm.rating < 1 || reviewForm.rating > 5) {
+      setReviewError('Veuillez sélectionner une note.');
+      return;
+    }
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: product.id,
+          name: reviewForm.name.trim(),
+          city: reviewForm.city.trim() || null,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setReviewError(data.error || 'Erreur lors de l\'envoi.');
+        return;
+      }
+      setReviewSuccess(true);
+      setReviewForm({ name: '', city: '', rating: 0, comment: '' });
+    } catch {
+      setReviewError('Erreur réseau. Veuillez réessayer.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   // Gestion du sticky button
   useEffect(() => {
@@ -588,6 +665,174 @@ export default function ProductPageClient({ product, otherProducts }: ProductPag
           </Container>
         </section>
       )}
+
+      {/* 7. AVIS CLIENTS */}
+      <section className="py-16 bg-azalis-white border-t border-azalis-green/10">
+        <Container size="lg">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-serif font-medium text-azalis-green mb-2 text-center">
+              Avis clients
+            </h2>
+
+            {reviews.length > 0 && (
+              <div className="flex items-center justify-center gap-3 mb-10">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg
+                      key={star}
+                      className={`w-6 h-6 ${star <= Math.round(avgRating) ? 'text-[#D4A843]' : 'text-gray-200'}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-2xl font-semibold text-azalis-green">{avgRating.toFixed(1)}</span>
+                <span className="text-sm text-[#2E2E2E]/50 font-light">({reviews.length} avis)</span>
+              </div>
+            )}
+
+            {reviews.length === 0 && (
+              <p className="text-center text-sm text-[#2E2E2E]/40 font-light mb-10">
+                Aucun avis pour le moment. Soyez le premier à donner votre avis&nbsp;!
+              </p>
+            )}
+
+            {reviews.length > 0 && (
+              <div className="space-y-6 mb-14">
+                {reviews.map((review) => (
+                  <div key={review.id} className="bg-[#F8F3EB] rounded-sm p-6 border border-azalis-green/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium text-azalis-green">{review.name}</span>
+                        {review.city && (
+                          <span className="text-xs text-[#2E2E2E]/40 font-light">{review.city}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-[#2E2E2E]/30 font-light">
+                        {new Date(review.created_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-0.5 mb-3">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg
+                          key={star}
+                          className={`w-4 h-4 ${star <= review.rating ? 'text-[#D4A843]' : 'text-gray-200'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
+                    <p className="text-sm text-[#3A3A3A] font-light leading-relaxed">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-[#F8F3EB] rounded-sm p-8 border border-azalis-green/10">
+              <h3 className="text-xl font-serif font-medium text-azalis-green mb-6">Laisser un avis</h3>
+
+              {reviewSuccess ? (
+                <div className="text-center py-6">
+                  <svg className="w-10 h-10 text-azalis-green mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-base text-azalis-green font-medium">
+                    Votre avis a bien été reçu, il sera publié dans les plus brefs délais.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleReviewSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2E2E2E]/70 mb-1.5">
+                        Prénom <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={reviewForm.name}
+                        onChange={(e) => setReviewForm({ ...reviewForm, name: e.target.value })}
+                        className="w-full px-4 py-3 bg-azalis-white border border-azalis-green/15 rounded-lg text-sm focus:outline-none focus:border-azalis-green/40 transition-colors"
+                        placeholder="Votre prénom"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2E2E2E]/70 mb-1.5">Ville</label>
+                      <input
+                        type="text"
+                        value={reviewForm.city}
+                        onChange={(e) => setReviewForm({ ...reviewForm, city: e.target.value })}
+                        className="w-full px-4 py-3 bg-azalis-white border border-azalis-green/15 rounded-lg text-sm focus:outline-none focus:border-azalis-green/40 transition-colors"
+                        placeholder="Votre ville (optionnel)"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[#2E2E2E]/70 mb-1.5">
+                      Note <span className="text-red-400">*</span>
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className="p-0.5 transition-transform hover:scale-110"
+                        >
+                          <svg
+                            className={`w-7 h-7 transition-colors ${
+                              star <= (hoverRating || reviewForm.rating) ? 'text-[#D4A843]' : 'text-gray-200'
+                            }`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[#2E2E2E]/70 mb-1.5">
+                      Commentaire <span className="text-red-400">*</span>
+                    </label>
+                    <textarea
+                      value={reviewForm.comment}
+                      onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                      rows={4}
+                      className="w-full px-4 py-3 bg-azalis-white border border-azalis-green/15 rounded-lg text-sm focus:outline-none focus:border-azalis-green/40 transition-colors resize-none"
+                      placeholder="Partagez votre expérience avec ce produit..."
+                    />
+                  </div>
+
+                  {reviewError && (
+                    <p className="text-sm text-red-500 font-light">{reviewError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="px-8 py-3 bg-azalis-green text-azalis-white text-sm font-normal rounded-lg hover:bg-azalis-green-hover transition-colors disabled:opacity-50"
+                  >
+                    {reviewSubmitting ? 'Envoi en cours...' : 'Envoyer mon avis'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </Container>
+      </section>
 
       {/* STICKY CTA BUTTON */}
       {showStickyButton && (
