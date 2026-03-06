@@ -94,12 +94,33 @@ function validateOrderData(data: any): { valid: boolean; errors: ValidationError
   };
 }
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000;
+
 /**
  * POST /api/create-order
  * Crée une nouvelle commande dans Supabase
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting par IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+
+    if (entry && now < entry.resetAt) {
+      if (entry.count >= RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { error: 'Trop de tentatives, veuillez réessayer dans 1 heure.' },
+          { status: 429 }
+        );
+      }
+      entry.count++;
+    } else {
+      rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    }
+
     // 1. Parser les données
     const data: OrderRequestData = await request.json();
 

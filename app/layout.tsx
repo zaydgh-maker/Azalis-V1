@@ -21,11 +21,56 @@ const playfair = Playfair_Display({
   weight: ["400", "500", "600", "700"],
 });
 
-// Métadonnées du site
 export const metadata: Metadata = {
-  title: "AZALIS - Le naturel sous contrôle",
-  description: "E-commerce de produits naturels et éco-responsables",
-  keywords: ["naturel", "bio", "éco-responsable", "cosmétiques", "bien-être"],
+  title: {
+    default: 'Azalis — Le naturel sous contrôle',
+    template: '%s | Azalis',
+  },
+  description:
+    "Soins naturels formulés en laboratoire agréé au Maroc. Sérum Hydratant Figue de Barbarie et Sérum Anti-Acné Purifiant. 98% d'origine naturelle. Livraison partout au Maroc, paiement à la réception.",
+  keywords: [
+    'soin naturel maroc',
+    'sérum visage maroc',
+    'cosmétique naturel maroc',
+    'sérum figue de barbarie',
+    'sérum anti acné maroc',
+    'soin peau sensible maroc',
+    'sérum hydratant maroc',
+    'azalis',
+  ],
+  authors: [{ name: 'Azalis' }],
+  creator: 'Azalis',
+  publisher: 'Azalis',
+  metadataBase: new URL('https://azalis.ma'),
+  alternates: { canonical: 'https://azalis.ma' },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large' as const },
+  },
+  openGraph: {
+    title: 'Azalis — Le naturel sous contrôle',
+    description:
+      'Soins naturels formulés en laboratoire agréé au Maroc. Livraison partout au Maroc, paiement à la réception.',
+    url: 'https://azalis.ma',
+    siteName: 'Azalis',
+    locale: 'fr_MA',
+    type: 'website',
+    images: [
+      {
+        url: '/images/serum-hydratant.png',
+        width: 1200,
+        height: 630,
+        alt: 'Azalis Sérum Hydratant Figue de Barbarie',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Azalis — Le naturel sous contrôle',
+    description: 'Soins naturels formulés en laboratoire agréé au Maroc.',
+    images: ['/images/serum-hydratant.png'],
+  },
 };
 
 export default function RootLayout({
