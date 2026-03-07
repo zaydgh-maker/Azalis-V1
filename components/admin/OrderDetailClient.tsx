@@ -9,7 +9,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/lib/products';
 import { formatDate } from '@/lib/utils';
 
@@ -54,24 +53,17 @@ export default function OrderDetailClient({ order: initialOrder }: OrderDetailCl
     setIsUpdating(true);
     setError(null);
     setSuccess(null);
-
     try {
-      const { data, error: updateError } = await supabase
-        .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', order.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      setOrder(data);
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Erreur mise à jour');
+      setOrder(prev => ({ ...prev, status: newStatus }));
       setSuccess('Statut mis à jour avec succès');
       router.refresh();
-    } catch (err) {
-      console.error('Error updating status:', err);
+    } catch {
       setError('Erreur lors de la mise à jour du statut');
     } finally {
       setIsUpdating(false);

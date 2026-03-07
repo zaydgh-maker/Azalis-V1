@@ -18,6 +18,39 @@ async function verifyAdmin() {
   return null;
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authError = await verifyAdmin();
+    if (authError) {
+      return NextResponse.json({ error: authError.error }, { status: authError.status });
+    }
+
+    const { id } = await params;
+    const { status } = await request.json();
+
+    const { error } = await supabaseAdmin
+      .from('orders')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating order status:', error);
+      return NextResponse.json(
+        { error: error.message || 'Erreur lors de la mise à jour' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Admin orders PATCH error:', err);
+    return NextResponse.json({ error: 'Erreur inattendue' }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
