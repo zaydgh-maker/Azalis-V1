@@ -60,3 +60,35 @@ export async function PATCH(
     return NextResponse.json({ error: 'Erreur inattendue.' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authError = await verifyAdmin();
+    if (authError) {
+      return NextResponse.json({ error: authError.error }, { status: authError.status });
+    }
+
+    const { id } = await params;
+
+    const { error } = await supabaseAdmin
+      .from('reviews')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting review:', error);
+      return NextResponse.json(
+        { error: 'Erreur lors de la suppression de l\'avis.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Reviews DELETE error:', err);
+    return NextResponse.json({ error: 'Erreur inattendue.' }, { status: 500 });
+  }
+}

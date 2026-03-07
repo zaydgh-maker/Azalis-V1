@@ -48,6 +48,20 @@ export default function ReviewsClient({ reviews: initialReviews }: ReviewsClient
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setActionLoading(id);
+    try {
+      const res = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setReviews((prev) => prev.filter((r) => r.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting review:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (reviews.length === 0) {
     return (
       <div className="bg-azalis-white rounded-sm border border-azalis-green/10 p-12 text-center">
@@ -111,24 +125,36 @@ export default function ReviewsClient({ reviews: initialReviews }: ReviewsClient
                 </p>
               </div>
 
-              {review.status === 'pending' && (
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleAction(review.id, 'approved')}
-                    disabled={actionLoading === review.id}
-                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                  >
-                    Approuver
-                  </button>
-                  <button
-                    onClick={() => handleAction(review.id, 'rejected')}
-                    disabled={actionLoading === review.id}
-                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                  >
-                    Refuser
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {review.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => handleAction(review.id, 'approved')}
+                      disabled={actionLoading === review.id}
+                      className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                    >
+                      Approuver
+                    </button>
+                    <button
+                      onClick={() => handleAction(review.id, 'rejected')}
+                      disabled={actionLoading === review.id}
+                      className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                    >
+                      Refuser
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => handleDelete(review.id)}
+                  disabled={actionLoading === review.id}
+                  className="px-3 py-2 text-azalis-black/40 hover:text-red-600 transition-colors disabled:opacity-50"
+                  title="Supprimer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         );
